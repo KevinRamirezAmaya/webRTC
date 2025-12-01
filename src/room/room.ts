@@ -36,7 +36,6 @@ export const roomHandler = (socket: Socket) => {
 
         socket.removeAllListeners("disconnect");
         socket.on("disconnect", () => {
-            console.log("user left the room", peerId);
             leaveRoom({ roomId, peerId });
         });
     };
@@ -55,107 +54,32 @@ export const roomHandler = (socket: Socket) => {
         socket.leave(roomId);
     };
 
-
-    const startSharing = (data?: IRoomParams) => {
-        if (!data) return console.error("startSharing: data missing");
-
-        const { peerId, roomId } = data;
-        if (!peerId || !roomId)
-            return console.error("startSharing: missing peerId or roomId");
-
+    const startSharing = ({ peerId, roomId }: IRoomParams) => {
         socket.to(roomId).emit("user-started-sharing", peerId);
     };
 
-    const stopSharing = (data?: IRoomParams) => {
-        if (!data) return console.error("stopSharing: data missing");
-
-        const { peerId, roomId } = data;
-
-        if (!peerId || !roomId)
-            return console.error("stopSharing: missing peerId or roomId");
-
+    const stopSharing = ({ peerId, roomId }: IRoomParams) => {
         socket.to(roomId).emit("user-stopped-sharing", peerId);
     };
 
-    const addMessage = ({
-        roomId,
-        message,
-    }: {
-        roomId: string;
-        message: IMessage;
-    }) => {
+    const addMessage = ({ roomId, message }: { roomId: string; message: IMessage }) => {
         if (!chats[roomId]) chats[roomId] = [];
         chats[roomId].push(message);
-
         socket.to(roomId).emit("add-message", message);
     };
 
-   
-    const changeName = ({
-        peerId,
-        userName,
-        roomId,
-    }: {
-        peerId: string;
-        userName: string;
-        roomId: string;
-    }) => {
+    const changeName = ({ peerId, userName, roomId }: IRoomParams & { userName: string }) => {
         if (rooms[roomId] && rooms[roomId][peerId]) {
             rooms[roomId][peerId].userName = userName;
             socket.to(roomId).emit("name-changed", { peerId, userName });
         }
     };
 
-
-    const handleOffer = ({
-        roomId,
-        offer,
-        from,
-    }: {
-        roomId: string;
-        offer: any;
-        from: string;
-    }) => {
-        socket.to(roomId).emit("offer", { offer, from });
-    };
-
-
-    const handleAnswer = ({
-        roomId,
-        answer,
-        from,
-    }: {
-        roomId: string;
-        answer: any;
-        from: string;
-    }) => {
-        socket.to(roomId).emit("answer", { answer, from });
-    };
-
-    const handleIceCandidate = ({
-        roomId,
-        candidate,
-        from,
-    }: {
-        roomId: string;
-        candidate: any;
-        from: string;
-    }) => {
-        socket.to(roomId).emit("ice-candidate", { candidate, from });
-    };
-
-    /** ----------------------
-     *   EVENTOS SOCKET
-     * ---------------------- */
+    
     socket.on("create-room", createRoom);
     socket.on("join-room", joinRoom);
     socket.on("start-sharing", startSharing);
     socket.on("stop-sharing", stopSharing);
     socket.on("send-message", addMessage);
     socket.on("change-name", changeName);
-
-  
-    socket.on("offer", handleOffer);
-    socket.on("answer", handleAnswer);
-    socket.on("ice-candidate", handleIceCandidate);
 };
